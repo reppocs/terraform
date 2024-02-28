@@ -44,7 +44,8 @@ resource "proxmox_vm_qemu" "virtual_machine" {
     bridge = "vmbr0"
   }
 
-  ipconfig0 = "ip=192.168.1.101/24,gw=192.168.1.1"
+  vmid = "131"
+  ipconfig0 = "ip=192.168.1.131/24,gw=192.168.1.1"
   nameserver = "192.168.1.100"
   searchdomain = "home.lab"
   sshkeys = var.ssh_pub_key
