@@ -19,7 +19,7 @@ provider "proxmox" {
 resource "proxmox_vm_qemu" "virtual_machine" {
   name = "tftest"
   target_node = "pve"
-  clone = "ubuntu-22.04-template"
+  clone = "ubuntu-24.04-cloud-init-template"
   full_clone  = "true"
 
   agent = 0
