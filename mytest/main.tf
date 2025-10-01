@@ -58,7 +58,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     }
     
     user_account {
-      username = "ubuntu"
+      username = "corey"
       password = var.vm_password
       keys     = [
         trimspace(file("~/.ssh/id_ed25519.pub"))
