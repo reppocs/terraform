@@ -18,10 +18,10 @@ provider "proxmox" {
   }
 }
 
-resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
-  name        = "ubuntu-vm"
+resource "proxmox_virtual_environment_vm" "mytestvm" {
+  name        = "mytestvm"
   node_name   = "pve"
-  vm_id       = 160
+  vm_id       = 170
   
   clone {
     vm_id = 9000  # Your template VM ID
@@ -48,7 +48,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.1.160/24"
+        address = "192.168.1.170/24"
         gateway = "192.168.1.1"
       }
     }
@@ -72,5 +72,5 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
 }
 
 output "vm_ip" {
-  value = proxmox_virtual_environment_vm.ubuntu_vm.ipv4_addresses[1][0]
+  value = proxmox_virtual_environment_vm.mytestvm.ipv4_addresses[1][0]
 }
