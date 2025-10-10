@@ -22,7 +22,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   count       = 3
   name        = "kubes-vm-${count.index + 1}"
   node_name   = "pve"
-  vm_id       = 170 + count.index
+  vm_id       = 180 + count.index
   
   clone {
     vm_id = 9000  # Your template VM ID
@@ -49,7 +49,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.1.${170 + count.index}/24"
+        address = "192.168.1.${180 + count.index}/24"
         gateway = "192.168.1.1"
       }
     }
