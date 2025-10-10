@@ -10,11 +10,11 @@ terraform {
 provider "proxmox" {
   endpoint = var.proxmox_endpoint
   api_token = var.proxmox_api_token
-  insecure = true
+  insecure = var.proxmox_insecure
   
   ssh {
     agent    = true
-    username = "root"
+    username = var.proxmox_ssh_user
   }
 }
 
@@ -23,47 +23,47 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   name        = "kubes-vm-${count.index + 1}"
   node_name   = "pve"
   vm_id       = 180 + count.index
+  tags        = var.vm_tags
   
   clone {
-    vm_id = 9000  # Your template VM ID
+    vm_id = var.template_vm_id  # Your template VM ID
   }
   
   cpu {
-    cores = 2
+    cores = var.vm_cpu_cores
+    type  = "host"
   }
   
   memory {
-    dedicated = 2048
+    dedicated = var.vm_memory_mb
   }
   
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.vm_datastore
     interface    = "scsi0"
-    size         = 25
+    size         = var.vm_disk_size_gb
   }
   
   network_device {
-    bridge = "vmbr0"
+    bridge = var.vm_network_bridge
   }
   
   initialization {
     ip_config {
       ipv4 {
         address = "192.168.1.${180 + count.index}/24"
-        gateway = "192.168.1.1"
+        gateway = var.vm_ipv4_gateway
       }
     }
     
     dns {
-      servers = ["8.8.8.8", "8.8.4.4"]
+      servers = var.vm_dns_servers
     }
     
     user_account {
-      username = "ubuntu"
+      username = var.vm_username
       password = var.vm_password
-      keys     = [
-        trimspace(file("~/.ssh/id_ed25519.pub"))
-      ]
+      keys     = var.vm_ssh_keys
     }
   }
   
