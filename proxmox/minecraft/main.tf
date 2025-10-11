@@ -1,4 +1,6 @@
 terraform {
+  required_version = ">= 1.0"
+  
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
@@ -8,70 +10,89 @@ terraform {
 }
 
 provider "proxmox" {
-  endpoint = var.proxmox_endpoint
+  endpoint  = var.proxmox_endpoint
   api_token = var.proxmox_api_token
-  insecure = true
+  insecure  = var.proxmox_insecure
   
   ssh {
     agent    = true
-    username = "root"
+    username = var.proxmox_ssh_user
   }
 }
 
-resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
-  name        = "minecraft"
-  node_name   = "pve"
-  vm_id       = 152
-  tags        = ["prod"]
+resource "proxmox_virtual_environment_vm" "vm" {
+  name      = var.vm_name
+  node_name = var.proxmox_node
+  vm_id     = var.vm_id
+  tags      = var.vm_tags
   
   clone {
-    vm_id = 9000  # Your template VM ID
+    vm_id = var.template_vm_id
   }
   
   cpu {
-    cores = 2
+    cores = var.vm_cpu_cores
+    type  = "host"
   }
   
   memory {
-    dedicated = 8192
+    dedicated = var.vm_memory_mb
   }
   
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.vm_datastore
     interface    = "scsi0"
-    size         = 50
+    size         = var.vm_disk_size_gb
+    discard      = "on"
+    ssd          = true
   }
   
   network_device {
-    bridge = "vmbr0"
+    bridge = var.vm_network_bridge
   }
   
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.1.152/24"
-        gateway = "192.168.1.1"
+        address = var.vm_ipv4_address
+        gateway = var.vm_ipv4_gateway
       }
     }
     
     dns {
-      servers = ["192.168.1.71", "9.9.9.9"]
+      servers = var.vm_dns_servers
     }
     
     user_account {
-      username = "corey"
+      username = var.vm_username
       password = var.vm_password
-      keys     = [
-        trimspace(file("~/.ssh/id_ed25519.pub"))
-      ]
+      keys     = var.vm_ssh_keys
     }
   }
   
   operating_system {
     type = "l26"
   }
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to tags, for example
+      tags,
+    ]
+  }
+}
+
+output "vm_id" {
+  description = "The ID of the created VM"
+  value       = proxmox_virtual_environment_vm.vm.id
+}
+
+output "vm_name" {
+  description = "The name of the created VM"
+  value       = proxmox_virtual_environment_vm.vm.name
 }
 
 output "vm_ip" {
-  value = proxmox_virtual_environment_vm.ubuntu_vm.ipv4_addresses[1][0]
+  description = "The IPv4 address of the VM"
+  value       = try(proxmox_virtual_environment_vm.vm.ipv4_addresses[1][0], "N/A")
 }
