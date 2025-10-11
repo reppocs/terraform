@@ -1,4 +1,6 @@
 terraform {
+  required_version = ">= 1.0"
+  
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
@@ -8,62 +10,66 @@ terraform {
 }
 
 provider "proxmox" {
-  endpoint = var.proxmox_endpoint
+  endpoint  = var.proxmox_endpoint
   api_token = var.proxmox_api_token
-  insecure = var.proxmox_insecure
+  insecure  = true
   
   ssh {
     agent    = true
-    username = var.proxmox_ssh_user
+    username = "root"
   }
 }
 
-resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
-  count       = 3
-  name        = "kubes-vm-${count.index + 1}"
-  node_name   = "pve"
-  vm_id       = var.vm_id + count.index
-  tags        = var.vm_tags
+resource "proxmox_virtual_environment_vm" "k8s_nodes" {
+  count     = 3
+  name      = "k8s-node-${count.index + 1}"
+  node_name = "pve"
+  vm_id     = 180 + count.index
+  tags      = ["kubernetes", "testing"]
   
   clone {
-    vm_id = var.template_vm_id  # Your template VM ID
+    vm_id = 9000
   }
   
   cpu {
-    cores = var.vm_cpu_cores
+    cores = 2
     type  = "host"
   }
   
   memory {
-    dedicated = var.vm_memory_mb
+    dedicated = 4096
   }
   
   disk {
-    datastore_id = var.vm_datastore
+    datastore_id = "local-lvm"
     interface    = "scsi0"
-    size         = var.vm_disk_size_gb
+    size         = 50
+    discard      = "on"
+    ssd          = true
   }
   
   network_device {
-    bridge = var.vm_network_bridge
+    bridge = "vmbr0"
   }
   
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.1.${var.vm_id + count.index}/24"
-        gateway = var.vm_ipv4_gateway
+        address = "192.168.1.${180 + count.index}/24"
+        gateway = "192.168.1.1"
       }
     }
     
     dns {
-      servers = var.vm_dns_servers
+      servers = ["8.8.8.8", "8.8.4.4"]
     }
     
     user_account {
-      username = var.vm_username
+      username = "corey"
       password = var.vm_password
-      keys     = var.vm_ssh_keys
+      keys     = [
+        file("~/.ssh/id_ed25519.pub")
+      ]
     }
   }
   
@@ -72,9 +78,13 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   }
 }
 
-output "vm_ips" {
+output "k8s_nodes" {
+  description = "Kubernetes node details"
   value = {
-    for vm in proxmox_virtual_environment_vm.ubuntu_vm :
-    vm.name => vm.ipv4_addresses[1][0]
+    for vm in proxmox_virtual_environment_vm.k8s_nodes :
+    vm.name => {
+      id = vm.vm_id
+      ip = try(vm.ipv4_addresses[1][0], "192.168.1.${180 + vm.vm_id}")
+    }
   }
 }
