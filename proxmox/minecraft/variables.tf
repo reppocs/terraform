@@ -38,7 +38,7 @@ variable "vm_name" {
 variable "vm_id" {
   description = "VM ID"
   type        = number
-  default     = 170
+  default     = 152
 }
 
 variable "template_vm_id" {
